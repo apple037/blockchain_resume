@@ -18,6 +18,7 @@ export class Dapp extends React.Component {
             txBeingSent: undefined,
             txReceipt: undefined,
             networkError: undefined,
+            isCreated: undefined,
         };
         this.state = this.initialState;
     }
@@ -296,7 +297,7 @@ export class Dapp extends React.Component {
             if (receipt.status === 0) {
                 throw new Error("Transaction failed");
             }
-            await this._updateResume();
+            await this._updateResumeState();
         } catch (error) {
             if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
                 return;
@@ -308,7 +309,7 @@ export class Dapp extends React.Component {
         }
     }
     // This method updates the state of the application with the user's resume
-    async _updateResume() {
+    async _updateResumeState() {
         // Get resume on blockchain
         const resume = await this._resume.getResume(this.state.selectedAddress);
         const skills = await this._resume.getSkills(this.state.selectedAddress);
@@ -326,6 +327,38 @@ export class Dapp extends React.Component {
             projects: projects
         };
         this.setState({ personalResume });
+    }
+    // This method will send transaction to update personal resume
+    async _updatePersonalResume(resumeData) {
+        this._checkData(resumeData.name, resumeData.email, resumeData.github, resumeData.about, resumeData.skills, resumeData.experiences, resumeData.education, resumeData.projects);
+        try {
+            this._dismissTransactionError();
+            const tx = await this._resume.updateResume(resumeData.name, resumeData.email, resumeData.github, resumeData.about, resumeData.skills, resumeData.experiences, resumeData.education, resumeData.projects);
+            this.setState({ txBeingSent: tx.hash });
+            const receipt = await tx.wait();
+            if (receipt.status === 0) {
+                throw new Error("Transaction failed");
+            }
+            await this._updateResumeState();
+        } catch (error) {
+            if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
+                return;
+            }
+            console.error(error);
+            this.setState({ transactionError: error });
+        } finally {
+            this.setState({ txBeingSent: undefined });
+        }
+    }
+
+    _checkIsOwner() {
+        return contractAddress.Owner == this.state.selectedAddress;
+    }
+
+    async _checkResumeExist() {
+        const isCreated = await this._resume.isCreated(this.state.selectedAddress);
+        this.setState({ isCreated });
+        return isCreated;
     }
 
     async _switchChain() {
