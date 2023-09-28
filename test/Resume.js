@@ -30,6 +30,9 @@ describe("Resume", function () {
             ({ resume, signer, user1 } = await loadFixture(deployResumeFixture));
         });
         describe("Test before add a resume", function () {
+            it("CheckIsCreated should get false before add a resume", async function () {
+                expect(await resume.connect(user1).checkIsCreated()).to.equal(false);
+            });
             it("Should fail if the user not yet add but try to get the resume", async function () {
                 await expect(resume.connect(user1).getUserResume()).to.be.revertedWith("Resume: Resume not exist");
             });
@@ -81,6 +84,9 @@ describe("Resume", function () {
                     ["Rusted Stanley"]);
             });
             describe("User function", function () {
+                it("CheckIsCreated should get true after add a resume", async function () {
+                    expect(await resume.connect(user1).checkIsCreated()).to.equal(true);
+                });
                 it("Should fail if the user has already created a resume", async function () {
                     // Add a new resume again
                     await expect(resume.connect(user1).addResume("Jasper", "apple037037@gmail.com",

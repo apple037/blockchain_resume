@@ -281,7 +281,7 @@ export class Dapp extends React.Component {
     _resetState() {
         this.setState(this.initialState);
     }
-
+    // Send transaction to add personal resume
     async _addResume(name, email, github, about, skills, experiences, education, projects) {
         let dataValid = _checkData(name, email, github, about, skills, experiences, education, projects);
         if (!dataValid) {
@@ -306,6 +306,26 @@ export class Dapp extends React.Component {
         } finally {
             this.setState({ txBeingSent: undefined });
         }
+    }
+    // This method updates the state of the application with the user's resume
+    async _updateResume() {
+        // Get resume on blockchain
+        const resume = await this._resume.getResume(this.state.selectedAddress);
+        const skills = await this._resume.getSkills(this.state.selectedAddress);
+        const experiences = await this._resume.getExperiences(this.state.selectedAddress);
+        const education = await this._resume.getEducation(this.state.selectedAddress);
+        const projects = await this._resume.getProjects(this.state.selectedAddress);
+        personalResume = {
+            name: resume.name,
+            email: resume.email,
+            github: resume.github,
+            about: resume.about,
+            skills: skills,
+            experiences: experiences,
+            education: education,
+            projects: projects
+        };
+        this.setState({ personalResume });
     }
 
     async _switchChain() {

@@ -139,6 +139,10 @@ contract Resume is Ownable {
     }
 
     /** Public Get Functions */
+    function checkIsCreated() public view returns (bool) {
+        return isCreated[msg.sender];
+    }
+
     function getUserResume() public view returns (UserResume memory) {
         require(isCreated[msg.sender] == true, "Resume: Resume not exist");
         return userResumes[msg.sender];
