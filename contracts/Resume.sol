@@ -189,4 +189,16 @@ contract Resume is Ownable {
     ) public view onlyOwner returns (bool) {
         return isCreated[user];
     }
+
+    // 檢查 list 是否都有建立履歷
+    function checkListCreated(
+        address[] memory list
+    ) public view onlyOwner returns (bool) {
+        require(list.length > 0, "Resume: list is empty");
+        bool result = true;
+        for (uint256 i = 0; i < list.length; i++) {
+            result = result && isCreated[list[i]];
+        }
+        return result;
+    }
 }

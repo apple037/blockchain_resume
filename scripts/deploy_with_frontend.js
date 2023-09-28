@@ -1,6 +1,7 @@
 const path = require("path");
 const utils = require('../utils/utils.js');
 
+
 async function main() {
   const [deployer] = await ethers.getSigners();
 
@@ -16,7 +17,7 @@ async function main() {
   // We also save the contract's artifacts and address in the resources directory
   utils.saveDeploymentFiles(resume, network.name, deployer.address);
   // Clone deploment files to frontend
-  //cloneToFrontend(network.name);
+  utils.cloneToFrontend(network.name);
 }
 
 main()
