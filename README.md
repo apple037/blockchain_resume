@@ -19,4 +19,13 @@ This is a smart contract that allows you to create a resume on the blockchain. I
 The frontend is built with React and TailwindCSS. It is still in development.
 ## WakaTime Metrics
 <!--START_SECTION:waka-->
+
+```txt
+Java              9 hrs 15 mins   ███████████░░░░░░░░░░░░░░   43.98 %
+JavaScript        6 hrs 18 mins   ███████▒░░░░░░░░░░░░░░░░░   29.95 %
+Markdown          1 hr 14 mins    █▒░░░░░░░░░░░░░░░░░░░░░░░   05.90 %
+Solidity          1 hr 12 mins    █▒░░░░░░░░░░░░░░░░░░░░░░░   05.74 %
+YAML              51 mins         █░░░░░░░░░░░░░░░░░░░░░░░░   04.08 %
+```
+
 <!--END_SECTION:waka-->
