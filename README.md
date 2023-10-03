@@ -21,11 +21,11 @@ The frontend is built with React and TailwindCSS. It is still in development.
 <!--START_SECTION:waka-->
 
 ```txt
-Java              9 hrs 15 mins   ███████████░░░░░░░░░░░░░░   43.98 %
-JavaScript        6 hrs 18 mins   ███████▒░░░░░░░░░░░░░░░░░   29.95 %
-Markdown          1 hr 14 mins    █▒░░░░░░░░░░░░░░░░░░░░░░░   05.90 %
-Solidity          1 hr 12 mins    █▒░░░░░░░░░░░░░░░░░░░░░░░   05.74 %
-YAML              51 mins         █░░░░░░░░░░░░░░░░░░░░░░░░   04.08 %
+JavaScript        8 hrs 39 mins   ██████████▓░░░░░░░░░░░░░░   42.54 %
+Java              7 hrs 42 mins   █████████▒░░░░░░░░░░░░░░░   37.91 %
+Solidity          1 hr 14 mins    █▓░░░░░░░░░░░░░░░░░░░░░░░   06.10 %
+Markdown          1 hr 7 mins     █▒░░░░░░░░░░░░░░░░░░░░░░░   05.52 %
+Properties        33 mins         ▓░░░░░░░░░░░░░░░░░░░░░░░░   02.78 %
 ```
 
 <!--END_SECTION:waka-->
