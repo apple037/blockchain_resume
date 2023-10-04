@@ -17,15 +17,3 @@ This is a smart contract that allows you to create a resume on the blockchain. I
 ``` npx hardhat coverage ```
 ## Frontend
 The frontend is built with React and TailwindCSS. It is still in development.
-## WakaTime Metrics
-<!--START_SECTION:waka-->
-
-```txt
-JavaScript        8 hrs 39 mins   ██████████▓░░░░░░░░░░░░░░   42.54 %
-Java              7 hrs 42 mins   █████████▒░░░░░░░░░░░░░░░   37.91 %
-Solidity          1 hr 14 mins    █▓░░░░░░░░░░░░░░░░░░░░░░░   06.10 %
-Markdown          1 hr 7 mins     █▒░░░░░░░░░░░░░░░░░░░░░░░   05.52 %
-Properties        33 mins         ▓░░░░░░░░░░░░░░░░░░░░░░░░   02.78 %
-```
-
-<!--END_SECTION:waka-->
