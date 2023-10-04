@@ -1,11 +1,20 @@
-import React from "react";
-
-// We'll use ethers to interact with the Ethereum network and our contract
+import React, { Component } from "react";
 import { ethers } from "ethers";
-
 import ResumeArtifact from "../contracts/Resume.json";
 import contractAddress from "../contracts/contract-address.json";
+import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
+import { TransactionErrorMessage } from "./TransactionErrorMessage";
+import { ConnectWallet } from "./ConnectWallet";
+import { Loading } from "./Loading";
+import { NoWalletDetected } from "./NoWalletDetected";
+import { PersonalResume } from "./PersonalResume";
+import { UpdateResume } from "./UpdateResume";
 
+// This is the default id used by the Hardhat Network
+const HARDHAT_NETWORK_ID = '31337';
+
+// This is an error code that indicates that the user canceled a transaction
+const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
 
 export class Dapp extends React.Component {
     constructor(props) {
@@ -19,26 +28,27 @@ export class Dapp extends React.Component {
             txReceipt: undefined,
             networkError: undefined,
             isCreated: undefined,
+            isInitialized: false,
         };
         this.state = this.initialState;
     }
     // Dapp渲染
     render() {
         // 如果瀏覽器沒有安裝錢包，則顯示錢包未安裝component
-        if (window.ethereum == undefined) {
+        if (window.ethereum === undefined) {
             return <NoWalletDetected />;
         }
         // 如果selectedAddress為undefined，則顯示連接錢包component
         if (this.state.selectedAddress === undefined) {
             return (
-                <ConnectWallet connectWallet={() => this.connectWallet()}
+                <ConnectWallet connectWallet={() => this._connectWallet()}
                     networkError={this.state.networkError}
                     dismiss={() => this._dismissNetworkError()}
                 />
             );
         }
-        // 如果PersonalResume為undefined，則顯示Loading component
-        if (this.state.personalResume === undefined) {
+        // 如果 NetworkData 為 undefined，則顯示 Loading component
+        if (this.state.isInitialized === false || !this.state.networkData) {
             return <Loading />;
         }
 
@@ -48,17 +58,17 @@ export class Dapp extends React.Component {
                 <div className="row">
                     <div className="col-12">
                         <h1>
-                            {this.state.networkData.name} {this.state.networkData.chainId}
+                            {this.state.networkData.name} ({this.state.networkData.chainId})
                         </h1>
                         <p>
-                            Welcome <b>{this.state.selectedAddress}</b>, you have{" "}
+                            Welcome <b>{this.state.selectedAddress}</b>, you have {" "}
                             <b>
                                 {this.state.balance.toString()} Ether
                             </b>
                             .
                         </p>
                         <p>
-                            The contract address is{" "} <b>{contractAddress.Resume}</b>
+                            The contract address is {" "} <b>{contractAddress.Resume} </b>
                             created by <b>{contractAddress.Owner}</b>
                             .
                         </p>
@@ -92,15 +102,27 @@ export class Dapp extends React.Component {
                     </div>
                 </div>
                 {/* Owner function here*/}
-                {this.state.selectedAddress == contractAddress.Owner && (
+                {/* {this.state.selectedAddress == contractAddress.Owner && (
                     <OwnerFunctionBlock />
+                )} */}
+                {/* Resume function here*/}
+                {this.state.isCreated && (
+                    <PersonalResume
+                        personalResume={this.state.personalResume}
+                    />
                 )}
-                {/* PersonalResume function here*/}
-                <UserFunctionBlock
-                    personalResume={this.state.personalResume}
-                    selectedAddress={this.state.selectedAddress}
-                    updatePersonalResume={(newResume) => this.updatePersonalResume(newResume)}
-                />
+                {/* Create function here*/}
+                {/* {!this.state.isCreated && (
+                    <CreateResume
+                        addResume={(name, email, github, about, skills, experiences, education, projects) => this._addResume(name, email, github, about, skills, experiences, education, projects)}
+                    />
+                )} */}
+                {/* Update function here*/}
+                {/* {this.state.isCreated && (
+                    <UpdateResume
+                        updateResume={(resumeData) => this._updatePersonalResume(resumeData)}
+                    />
+                )} */}
 
             </div>
         )
@@ -126,7 +148,6 @@ export class Dapp extends React.Component {
         this._checkNetwork();
 
         this._initialize(selectedAddress);
-
         // We reinitialize it whenever the user changes their account.
         window.ethereum.on("accountsChanged", ([newAddress]) => {
             this._stopPollingData();
@@ -137,32 +158,30 @@ export class Dapp extends React.Component {
             if (newAddress === undefined) {
                 return this._resetState();
             }
-
             this._initialize(newAddress);
         });
     }
 
     _initialize(userAddress) {
         // This method initializes the dapp
-
+        console.log("User address: " + userAddress)
         // We first store the user's address in the component's state
         this.setState({
             selectedAddress: userAddress,
+        }, () => {
+            // 在setState的回調函數中執行後續操作
+            console.log("Address in state: " + this.state.selectedAddress);
+            // 繼續其他初始化操作
+            this._initializeState();
+            this._checkResumeExist();
         });
-
-        // Then, we initialize ethers, fetch the token's data, and start polling
-        // for the user's balance.
-
-        // Fetching the token data and the user's balance are specific to this
-        // sample project, but you can reuse the same initialization pattern.
-        this._initializeEthers();
-        this._startPollingData();
+        this.setState({ isInitialized: true });
     }
 
-    async _initializeEthers() {
+    async _initializeState() {
+        console.log("=====Initialize resume=====");
         // We first initialize ethers by creating a provider using window.ethereum
         this._provider = new ethers.providers.Web3Provider(window.ethereum);
-
         // Then, we initialize the contract using that provider and the token's
         // artifact. You can do this same thing with your contracts.
         this._resume = new ethers.Contract(
@@ -170,6 +189,25 @@ export class Dapp extends React.Component {
             ResumeArtifact.abi,
             this._provider.getSigner(0)
         );
+        console.log("=====Initialize resume done=====")
+        // We first initialize ethers by creating a provider using window.ethereum
+        console.log("=====Initialize ethers=====");
+        this._provider = new ethers.providers.Web3Provider(window.ethereum);
+        console.log("Provider: " + this._provider);
+        console.log("Address: " + this.state.selectedAddress);
+        const balance = await this._provider.getBalance(this.state.selectedAddress);
+        console.log("Balance: " + balance);
+        this.setState({ balance });
+        console.log("=====Initialize ethers done=====");
+        console.log("=====Initialize network data=====");
+        const network = await this._provider.getNetwork();
+        const chainId = network.chainId;
+        let name = network.name;
+        if (name === "unknown") {
+            name = "Hardhat Network";
+        }
+        this.setState({ networkData: { name, chainId } });
+        console.log("=====Initialize network data done=====");
     }
 
     // The next two methods are needed to start and stop polling data. While
@@ -182,80 +220,41 @@ export class Dapp extends React.Component {
     _startPollingData() {
         this._pollDataInterval = setInterval(() => this._updateBalance(), 1000);
 
+        // Polling network data
+        this._pollNetworkDataInterval = setInterval(() => this._updateNetworkData(), 5000);
+
         // We run it once immediately so we don't have to wait for it
         this._updateBalance();
+        this._updateNetworkData();
     }
 
     _stopPollingData() {
         clearInterval(this._pollDataInterval);
+        clearInterval(this._pollNetworkDataInterval);
         this._pollDataInterval = undefined;
+        this._pollNetworkDataInterval = undefined;
     }
 
-
-
     async _updateBalance() {
+        // We first initialize ethers by creating a provider using window.ethereum
+        this._provider = new ethers.providers.Web3Provider(window.ethereum);
         const balance = await this._provider.getBalance(this.state.selectedAddress);
         this.setState({ balance });
     }
 
-    // This method sends an ethereum transaction to transfer tokens.
-    // While this action is specific to this application, it illustrates how to
-    // send a transaction.
-    async _transferTokens(to, amount) {
-        // Sending a transaction is a complex operation:
-        //   - The user can reject it
-        //   - It can fail before reaching the ethereum network (i.e. if the user
-        //     doesn't have ETH for paying for the tx's gas)
-        //   - It has to be mined, so it isn't immediately confirmed.
-        //     Note that some testing networks, like Hardhat Network, do mine
-        //     transactions immediately, but your dapp should be prepared for
-        //     other networks.
-        //   - It can fail once mined.
-        //
-        // This method handles all of those things, so keep reading to learn how to
-        // do it.
-
-        try {
-            // If a transaction fails, we save that error in the component's state.
-            // We only save one such error, so before sending a second transaction, we
-            // clear it.
-            this._dismissTransactionError();
-
-            // We send the transaction, and save its hash in the Dapp's state. This
-            // way we can indicate that we are waiting for it to be mined.
-            const tx = await this._token.transfer(to, amount);
-            this.setState({ txBeingSent: tx.hash });
-
-            // We use .wait() to wait for the transaction to be mined. This method
-            // returns the transaction's receipt.
-            const receipt = await tx.wait();
-
-            // The receipt, contains a status flag, which is 0 to indicate an error.
-            if (receipt.status === 0) {
-                // We can't know the exact error that made the transaction fail when it
-                // was mined, so we throw this generic one.
-                throw new Error("Transaction failed");
-            }
-
-            // If we got here, the transaction was successful, so you may want to
-            // update your state. Here, we update the user's balance.
-            await this._updateBalance();
-        } catch (error) {
-            // We check the error code to see if this error was produced because the
-            // user rejected a tx. If that's the case, we do nothing.
-            if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
-                return;
-            }
-
-            // Other errors are logged and stored in the Dapp's state. This is used to
-            // show them to the user, and for debugging.
-            console.error(error);
-            this.setState({ transactionError: error });
-        } finally {
-            // If we leave the try/catch, we aren't sending a tx anymore, so we clear
-            // this part of the state.
-            this.setState({ txBeingSent: undefined });
+    async _updateNetworkData() {
+        console.log("=====Update network data=====");
+        // We first initialize ethers by creating a provider using window.ethereum
+        this._provider = new ethers.providers.Web3Provider(window.ethereum);
+        const network = await this._provider.getNetwork();
+        const chainId = network.chainId;
+        let name = network.name;
+        if (name === "unknown") {
+            name = "Hardhat Network";
         }
+        this.setState({ networkData: { name, chainId } }, () => {
+            console.log("Network data: " + this.state.networkData);
+        });
     }
 
     // This method just clears part of the state.
@@ -284,7 +283,7 @@ export class Dapp extends React.Component {
     }
     // Send transaction to add personal resume
     async _addResume(name, email, github, about, skills, experiences, education, projects) {
-        let dataValid = _checkData(name, email, github, about, skills, experiences, education, projects);
+        let dataValid = this._checkData(name, email, github, about, skills, experiences, education, projects);
         if (!dataValid) {
             console.log("Data is not valid");
             return;
@@ -316,7 +315,7 @@ export class Dapp extends React.Component {
         const experiences = await this._resume.getExperiences(this.state.selectedAddress);
         const education = await this._resume.getEducation(this.state.selectedAddress);
         const projects = await this._resume.getProjects(this.state.selectedAddress);
-        personalResume = {
+        let personalResume = {
             name: resume.name,
             email: resume.email,
             github: resume.github,
@@ -352,13 +351,24 @@ export class Dapp extends React.Component {
     }
 
     _checkIsOwner() {
-        return contractAddress.Owner == this.state.selectedAddress;
+        return contractAddress.Owner === this.state.selectedAddress;
     }
 
     async _checkResumeExist() {
-        const isCreated = await this._resume.isCreated(this.state.selectedAddress);
-        this.setState({ isCreated });
-        return isCreated;
+        try {
+            const userAddress = this.state.selectedAddress;
+            console.log("[Check resume exist][Address]: " + userAddress);
+
+            // Check if the resume has checkIsCreated function
+            const isCreated = await this._resume.checkIsCreated();
+            this.setState({ isCreated });
+            return isCreated;
+        } catch (error) {
+            console.error("Error checking resume existence:", error);
+            // Handle the error here, e.g., show an error message to the user
+            // You can also set this.setState({ isCreated: false }) if needed
+            return false;
+        }
     }
 
     async _switchChain() {
@@ -379,28 +389,28 @@ export class Dapp extends React.Component {
 
     // This method checks if the data is valid
     _checkData(name, email, github, about, skills, experiences, education, projects) {
-        if (name == undefined || name == "") {
+        if (name === undefined || name === "") {
             return false;
         }
-        if (email == undefined) {
+        if (email === undefined) {
             return false;
         }
-        if (github == undefined) {
+        if (github === undefined) {
             return false;
         }
-        if (about == undefined) {
+        if (about === undefined) {
             return false;
         }
-        if (skills == undefined) {
+        if (skills === undefined) {
             return false;
         }
-        if (experiences == undefined) {
+        if (experiences === undefined) {
             return false;
         }
-        if (education == undefined) {
+        if (education === undefined) {
             return false;
         }
-        if (projects == undefined) {
+        if (projects === undefined) {
             return false;
         }
     }
