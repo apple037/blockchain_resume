@@ -9,7 +9,7 @@ This is a smart contract that allows you to create a resume on the blockchain. I
 ### 3. Deploy
 - No frontend property
 ``` npx hardhat run scripts/deploy.js --network  <NETWORK_CONFIG> ```
-- With frontend property
+- With frontend property (if you want to develop the frontend)
 ``` npx hardhat run scripts/deploy_with_frontend.js --network  <NETWORK_CONFIG> ```
 ### 4. Verify
 ``` npx hardhat verify --network <NETWORK_CONFIG> <DEPLOYED_CONTRACT_ADDRESS> ```
