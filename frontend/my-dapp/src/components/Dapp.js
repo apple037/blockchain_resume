@@ -9,6 +9,7 @@ import { Loading } from "./Loading";
 import { NoWalletDetected } from "./NoWalletDetected";
 import { PersonalResume } from "./PersonalResume";
 import { UpdateResume } from "./UpdateResume";
+import { CreateResume } from "./CreateResume";
 
 // This is the default id used by the Hardhat Network
 const HARDHAT_NETWORK_ID = '31337';
@@ -28,6 +29,7 @@ export class Dapp extends React.Component {
             txReceipt: undefined,
             networkError: undefined,
             isCreated: undefined,
+            isUpdate: false,
             isInitialized: false,
         };
         this.state = this.initialState;
@@ -106,23 +108,38 @@ export class Dapp extends React.Component {
                     <OwnerFunctionBlock />
                 )} */}
                 {/* Resume function here*/}
-                {this.state.isCreated && (
+                {this.state.isCreated && !this.state.isUpdate && (
                     <PersonalResume
                         personalResume={this.state.personalResume}
                     />
                 )}
                 {/* Create function here*/}
-                {/* {!this.state.isCreated && (
+                {!this.state.isCreated && (
                     <CreateResume
-                        addResume={(name, email, github, about, skills, experiences, education, projects) => this._addResume(name, email, github, about, skills, experiences, education, projects)}
+                        createResume={(name, email, github, about, skills, experiences, education, projects) => this._addResume(name, email, github, about, skills, experiences, education, projects)}
                     />
-                )} */}
+                )}
                 {/* Update function here*/}
-                {/* {this.state.isCreated && (
+                {this.state.isCreated && this.state.isUpdate && (
                     <UpdateResume
-                        updateResume={(resumeData) => this._updatePersonalResume(resumeData)}
+                        updateResume={(name, email, github, about, skills, experiences, education, projects) => this._updatePersonalResume(name, email, github, about, skills, experiences, education, projects)}
+                        personalResume={this.state.personalResume}
                     />
-                )} */}
+                )}
+                {/* Update button here*/}
+                {this.state.isCreated && !this.state.isUpdate && (
+                    <div className="row">
+                        <div className="col-12">
+                            <button
+                                className="btn btn-primary"
+                                type="button"
+                                onClick={() => this._updateButton()}
+                            >
+                                Update Resume
+                            </button>
+                        </div>
+                    </div>
+                )}
 
             </div>
         )
@@ -305,16 +322,18 @@ export class Dapp extends React.Component {
             this.setState({ transactionError: error });
         } finally {
             this.setState({ txBeingSent: undefined });
+            await this._checkResumeExist();
         }
     }
     // This method updates the state of the application with the user's resume
     async _updateResumeState() {
         // Get resume on blockchain
-        const resume = await this._resume.getResume(this.state.selectedAddress);
-        const skills = await this._resume.getSkills(this.state.selectedAddress);
-        const experiences = await this._resume.getExperiences(this.state.selectedAddress);
-        const education = await this._resume.getEducation(this.state.selectedAddress);
-        const projects = await this._resume.getProjects(this.state.selectedAddress);
+        console.log("=====Update resume state=====");
+        const resume = await this._resume.getUserResume();
+        const skills = await this._resume.getSkills();
+        const experiences = await this._resume.getExperiences();
+        const education = await this._resume.getEducation();
+        const projects = await this._resume.getProjects();
         let personalResume = {
             name: resume.name,
             email: resume.email,
@@ -325,14 +344,15 @@ export class Dapp extends React.Component {
             education: education,
             projects: projects
         };
+        console.log("Personal resume: " + personalResume);
         this.setState({ personalResume });
     }
     // This method will send transaction to update personal resume
-    async _updatePersonalResume(resumeData) {
-        this._checkData(resumeData.name, resumeData.email, resumeData.github, resumeData.about, resumeData.skills, resumeData.experiences, resumeData.education, resumeData.projects);
+    async _updatePersonalResume(name, email, github, about, skills, experiences, education, projects) {
+        this._checkData(name, email, github, about, skills, experiences, education, projects);
         try {
             this._dismissTransactionError();
-            const tx = await this._resume.updateResume(resumeData.name, resumeData.email, resumeData.github, resumeData.about, resumeData.skills, resumeData.experiences, resumeData.education, resumeData.projects);
+            const tx = await this._resume.updateResume(name, email, github, about, skills, experiences, education, projects);
             this.setState({ txBeingSent: tx.hash });
             const receipt = await tx.wait();
             if (receipt.status === 0) {
@@ -347,6 +367,7 @@ export class Dapp extends React.Component {
             this.setState({ transactionError: error });
         } finally {
             this.setState({ txBeingSent: undefined });
+            this.setState({ isUpdate: false });
         }
     }
 
@@ -361,6 +382,11 @@ export class Dapp extends React.Component {
 
             // Check if the resume has checkIsCreated function
             const isCreated = await this._resume.checkIsCreated();
+            // If the resume has checkIsCreated function, update the resume state
+            console.log("[Check resume exist][Is created]: " + isCreated);
+            if (isCreated) {
+                await this._updateResumeState();
+            }
             this.setState({ isCreated });
             return isCreated;
         } catch (error) {
@@ -380,6 +406,10 @@ export class Dapp extends React.Component {
         await this._initialize(this.state.selectedAddress);
     }
 
+    async _updateButton() {
+        this.setState({ isUpdate: true });
+    }
+
     // This method checks if the selected network is Localhost:8545
     _checkNetwork() {
         if (window.ethereum.networkVersion !== HARDHAT_NETWORK_ID) {
@@ -392,26 +422,27 @@ export class Dapp extends React.Component {
         if (name === undefined || name === "") {
             return false;
         }
-        if (email === undefined) {
-            return false;
-        }
-        if (github === undefined) {
-            return false;
-        }
-        if (about === undefined) {
-            return false;
-        }
-        if (skills === undefined) {
-            return false;
-        }
-        if (experiences === undefined) {
-            return false;
-        }
-        if (education === undefined) {
-            return false;
-        }
-        if (projects === undefined) {
-            return false;
-        }
+        // if (email === undefined) {
+        //     return false;
+        // }
+        // if (github === undefined) {
+        //     return false;
+        // }
+        // if (about === undefined) {
+        //     return false;
+        // }
+        // if (skills === undefined) {
+        //     return false;
+        // }
+        // if (experiences === undefined) {
+        //     return false;
+        // }
+        // if (education === undefined) {
+        //     return false;
+        // }
+        // if (projects === undefined) {
+        //     return false;
+        // }
+        return true;
     }
 }
