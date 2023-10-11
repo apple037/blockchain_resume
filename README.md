@@ -16,4 +16,7 @@ This is a smart contract that allows you to create a resume on the blockchain. I
 ### 5. Coverage
 ``` npx hardhat coverage ```
 ## Frontend
-The frontend is built with React and TailwindCSS. It is still in development.
+The frontend is built with React and TailwindCSS.
+- [x] Create a resume
+- [x] View a resume
+- [x] Edit a resume
