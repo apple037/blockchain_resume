@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 import { ethers } from "ethers";
 import ResumeArtifact from "../contracts/Resume.json";
 import contractAddress from "../contracts/contract-address.json";
@@ -136,6 +136,20 @@ export class Dapp extends React.Component {
                                 onClick={() => this._updateButton()}
                             >
                                 Update Resume
+                            </button>
+                        </div>
+                    </div>
+                )}
+                {/* Delete button here*/}
+                {this.state.isCreated && !this.state.isUpdate && (
+                    <div className="row">
+                        <div className="col-12">
+                            <button
+                                className="btn btn-danger"
+                                type="button"
+                                onClick={() => this._deleteButton()}
+                            >
+                                Delete Resume
                             </button>
                         </div>
                     </div>
@@ -403,11 +417,41 @@ export class Dapp extends React.Component {
             method: "wallet_switchEthereumChain",
             params: [{ chainId: chainIdHex }],
         });
-        await this._initialize(this.state.selectedAddress);
+        this._initialize(this.state.selectedAddress);
     }
 
     async _updateButton() {
         this.setState({ isUpdate: true });
+    }
+
+    async _deleteButton() {
+        // Here we pop up a confirmation dialog. If the user confirms, then we
+        // proceed to delete the resume.
+        if (!window.confirm("Are you sure you want to delete your resume?")) {
+            return;
+        }
+        else {
+            try {
+                this._dismissTransactionError();
+                const tx = await this._resume.deleteResume();
+                this.setState({ txBeingSent: tx.hash });
+                const receipt = await tx.wait();
+                if (receipt.status === 0) {
+                    throw new Error("Transaction failed");
+                }
+                this.setState({ personalResume: undefined });
+                this.setState({ isCreated: false });
+            } catch (error) {
+                if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
+                    return;
+                }
+                console.error(error);
+                this.setState({ transactionError: error });
+            } finally {
+                this.setState({ txBeingSent: undefined });
+                await this._checkResumeExist();
+            }
+        }
     }
 
     // This method checks if the selected network is Localhost:8545
