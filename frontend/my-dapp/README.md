@@ -1,5 +1,5 @@
 ### Functions
-[x] Connect wallet
-[ ] Call contract function
-[ ] Listen to contract event
-[ ] Send contract transaction
+- [x] Connect wallet
+- [x] Call contract function
+- [x] Listen to contract event
+- [x] Send contract transaction

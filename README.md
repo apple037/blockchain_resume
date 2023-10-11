@@ -21,3 +21,4 @@ The frontend is built with React and TailwindCSS.
 - [x] View a resume
 - [x] Edit a resume
 - [x] Delete a resume
+- [x] Event listener

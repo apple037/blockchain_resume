@@ -10,6 +10,7 @@ import { NoWalletDetected } from "./NoWalletDetected";
 import { PersonalResume } from "./PersonalResume";
 import { UpdateResume } from "./UpdateResume";
 import { CreateResume } from "./CreateResume";
+import { EventHistory } from "./EventHistory";
 
 // This is the default id used by the Hardhat Network
 const HARDHAT_NETWORK_ID = '31337';
@@ -31,6 +32,7 @@ export class Dapp extends React.Component {
             isCreated: undefined,
             isUpdate: false,
             isInitialized: false,
+            eventHistory: undefined,
         };
         this.state = this.initialState;
     }
@@ -154,6 +156,10 @@ export class Dapp extends React.Component {
                         </div>
                     </div>
                 )}
+                {/* Event history here*/}
+                {this.state.eventHistory && (
+                    <EventHistory eventHistory={this.state.eventHistory} />
+                )}
 
             </div>
         )
@@ -205,6 +211,7 @@ export class Dapp extends React.Component {
             // 繼續其他初始化操作
             this._initializeState();
             this._checkResumeExist();
+            this._contractEventListener();
         });
         this.setState({ isInitialized: true });
     }
@@ -312,6 +319,7 @@ export class Dapp extends React.Component {
     _resetState() {
         this.setState(this.initialState);
     }
+
     // Send transaction to add personal resume
     async _addResume(name, email, github, about, skills, experiences, education, projects) {
         let dataValid = this._checkData(name, email, github, about, skills, experiences, education, projects);
@@ -383,10 +391,6 @@ export class Dapp extends React.Component {
             this.setState({ txBeingSent: undefined });
             this.setState({ isUpdate: false });
         }
-    }
-
-    _checkIsOwner() {
-        return contractAddress.Owner === this.state.selectedAddress;
     }
 
     async _checkResumeExist() {
@@ -488,5 +492,42 @@ export class Dapp extends React.Component {
         //     return false;
         // }
         return true;
+    }
+
+    _checkIsOwner() {
+        return contractAddress.Owner === this.state.selectedAddress;
+    }
+
+    async _contractEventListener() {
+        // Setup event listener
+        let eventHistory;
+        if (eventHistory === undefined) {
+            eventHistory = [];
+        }
+        else {
+            eventHistory = this.state.eventHistory;
+        }
+        this._resume.on("CreateResume", (sender, name) => {
+            console.log("Resume created event with args: " + name + " from " + sender);
+            // Update the event history add in array
+            let history = {
+                event: "CreateResume",
+                args: { sender, name },
+                timestamp: new Date().toLocaleString()
+            }
+            eventHistory.push(history);
+            this.setState({ eventHistory });
+        });
+        this._resume.on("UpdateResume", (sender, name) => {
+            console.log("Resume updated event from " + sender);
+            // Update the event history
+            let history = {
+                event: "UpdateResume",
+                args: { sender },
+                timestamp: new Date().toLocaleString()
+            }
+            eventHistory.push(history);
+            this.setState({ eventHistory });
+        });
     }
 }
