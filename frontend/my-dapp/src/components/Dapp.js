@@ -67,7 +67,7 @@ export class Dapp extends React.Component {
                         <p>
                             Welcome <b>{this.state.selectedAddress}</b>, you have {" "}
                             <b>
-                                {this.state.balance.toString()} Ether
+                                {this.state.balance.toString()} Wei ({ethers.utils.formatEther(this.state.balance)} ETH)
                             </b>
                             .
                         </p>
